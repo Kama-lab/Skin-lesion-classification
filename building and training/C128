@@ -19,8 +19,8 @@ IMAGE_SIZE = (SIZE,SIZE)
 data = ImageDataGenerator(rescale=1./255)
 data_val = ImageDataGenerator(rescale=1./255)
 data_test = ImageDataGenerator(rescale=1./255)
-train_data = data.flow_from_directory('../input/dataset3/train',target_size=IMAGE_SIZE,batch_size=BATCH_SIZE,class_mode="categorical")
-val_data = data_val.flow_from_directory('../input/dataset3/val',target_size=IMAGE_SIZE,batch_size=BATCH_SIZE,class_mode="categorical")
+train_data = data.flow_from_directory('../input/train',target_size=IMAGE_SIZE,batch_size=BATCH_SIZE,class_mode="categorical")
+val_data = data_val.flow_from_directory('../input/val',target_size=IMAGE_SIZE,batch_size=BATCH_SIZE,class_mode="categorical")
 images_test = data_test.flow_from_directory('../input/test',target_size=IMAGE_SIZE,batch_size=BATCH_SIZE,class_mode="categorical",shuffle=False)
 
 
