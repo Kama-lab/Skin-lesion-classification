@@ -1,0 +1,79 @@
+from keras.preprocessing.image import ImageDataGenerator
+import cv2
+import pandas as pd
+import matplotlib
+import numpy as np
+import matplotlib.pyplot as plt
+import tensorflow as tf
+import keras
+
+SIZE = 72
+BATCH_SIZE = 50
+EPOCHS = 20
+DROPOUT_1 = 0.25
+DROPOUT_2 = 0.4
+MODEL_NUM = "C128(phase3)rmsprop(org)_"
+IMAGE_SIZE = (SIZE,SIZE)
+
+
+data = ImageDataGenerator(rescale=1./255)
+data_val = ImageDataGenerator(rescale=1./255)
+data_test = ImageDataGenerator(rescale=1./255)
+train_data = data.flow_from_directory('../input/dataset3/train',target_size=IMAGE_SIZE,batch_size=BATCH_SIZE,class_mode="categorical")
+val_data = data_val.flow_from_directory('../input/dataset3/val',target_size=IMAGE_SIZE,batch_size=BATCH_SIZE,class_mode="categorical")
+images_test = data_test.flow_from_directory('../input/test',target_size=IMAGE_SIZE,batch_size=BATCH_SIZE,class_mode="categorical",shuffle=False)
+
+
+model = keras.models.Sequential()
+model.add(keras.layers.Conv2D(32,(3,3),padding="same",activation = "relu",input_shape=(SIZE,SIZE,3)))
+model.add(keras.layers.BatchNormalization())
+model.add(keras.layers.Conv2D(64,(3,3),padding="same",activation = "relu"))
+model.add(keras.layers.BatchNormalization())
+model.add(keras.layers.MaxPooling2D(pool_size=(2,2)))
+model.add(keras.layers.Dropout(DROPOUT_1))
+model.add(keras.layers.Conv2D(128,(3,3),padding="same",activation = "relu"))
+model.add(keras.layers.BatchNormalization())
+model.add(keras.layers.Conv2D(128,(3,3),padding="same",activation = "relu"))
+model.add(keras.layers.BatchNormalization())
+model.add(keras.layers.MaxPooling2D(pool_size=(2,2)))
+model.add(keras.layers.Dropout(DROPOUT_1))
+model.add(keras.layers.Conv2D(256,(3,3),padding="same",activation = "relu"))
+model.add(keras.layers.BatchNormalization())
+model.add(keras.layers.MaxPooling2D(pool_size=(2,2)))
+model.add(keras.layers.Dropout(DROPOUT_1))
+model.add(keras.layers.Flatten())
+model.add(keras.layers.Dense(500,activation="relu",activity_regularizer=l2(0.001)))
+model.add(keras.layers.BatchNormalization())
+model.add(keras.layers.Dropout(DROPOUT_2))
+model.add(keras.layers.Dense(100,activation="relu",activity_regularizer=l2(0.001)))
+model.add(keras.layers.Dense(7,activation="softmax"))
+
+print(model.summary())
+
+learning_rate_reduction = keras.callbacks.callbacks.ReduceLROnPlateau(monitor='accuracy', 
+                                                        patience=2, 
+                                                        verbose=1, 
+                                                        factor=0.5, 
+                                                        min_lr=0.00001)
+
+callback1 = keras.callbacks.callbacks.EarlyStopping(monitor='val_loss', patience=3)
+callback2 = keras.callbacks.callbacks.EarlyStopping(monitor='val_accuracy', min_delta=0,
+                                                               patience=4, verbose=1, mode='auto')
+
+checkpoint = keras.callbacks.callbacks.ModelCheckpoint(MODEL_NUM + "model:epoch:{epoch:02d},loss:{val_loss:.2f},acc:{val_accuracy:.2f}.hdf5",
+                                                               monitor='val_accuracy', verbose=1,
+                                                               save_weights_only=True, mode='auto',save_best_only=True, period=2)
+
+model.compile(loss='categorical_crossentropy',optimizer='rmsprop',metrics=['accuracy'])
+
+  
+history = model.fit(train_data,validation_data=val_data,epochs=EPOCHS,callbacks=[learning_rate_reduction,checkpoint,callback2])
+
+model.save(MODEL_NUM + 'model.h5')
+model.save_weights(MODEL_NUM + 'model_weights.h5')
+
+json_model = model.to_json()
+with open(MODEL_NUM + "json_model.json", "w") as file:
+    file.write(json_model)
+   
+print(model.evaluate(images_test))
