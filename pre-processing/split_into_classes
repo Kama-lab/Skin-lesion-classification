@@ -1,0 +1,74 @@
+import pandas as pd
+import os
+import shutil
+import numpy as np
+from sklearn.model_selection import train_test_split
+
+
+metadata = pd.read_csv('HAM10000_metadata.csv')
+metadata.head()
+print(metadata['dx'])
+
+train_dir = 'train'
+val_dir = 'val'
+
+df_train, df_val = train_test_split(metadata, test_size=0.2, random_state=101, stratify=metadata['dx'])
+print(df_train)
+print(df_val)
+
+folder1 = os.listdir('HAM10000_images_part_1')
+folder2 = os.listdir('HAM10000_images_part_2')
+train_list = list(df_train['image_id'])
+val_list = list(df_val['image_id'])
+
+trainL = len(train_list)
+valL = len(val_list)
+nT = 0
+
+
+def process():
+    string = ""
+    n = (nT*100)/(valL)
+    for i in range(int(n)):
+        string+="#"
+    for j in range(100-int(n)):
+        string+="-"
+
+    stringNew = "["+string+"]"
+    return stringNew
+
+
+
+for image in train_list:
+    nT+=1
+    fname = image + '.jpg'
+    label = metadata.loc[metadata['image_id'] == image]
+    
+    if fname in folder1:
+        src = os.path.join('HAM10000_images_part_1', fname)
+        dst = os.path.join(train_dir, list(label['dx'])[0], fname)
+        shutil.copyfile(src, dst)
+    if fname in folder2:
+        src = os.path.join('HAM10000_images_part_2', fname)
+        dst = os.path.join(train_dir, list(label['dx'])[0], fname)
+        shutil.copyfile(src, dst)
+    print(nT,"/",trainL+valL,process())
+    
+    
+for image in val_list:
+    nT+=1
+    fname = image + '.jpg'
+    label = metadata.loc[metadata['image_id'] == image]
+     
+    if fname in folder1:
+        src = os.path.join('HAM10000_images_part_1', fname)
+        dst = os.path.join(val_dir, list(label['dx'])[0], fname)
+        shutil.copyfile(src, dst)
+    if fname in folder2:
+        src = os.path.join('HAM10000_images_part_2', fname)
+        dst = os.path.join(val_dir, list(label['dx'])[0], fname)
+        shutil.copyfile(src, dst)
+    print(nT,"/",valL,process())
+
+
+
