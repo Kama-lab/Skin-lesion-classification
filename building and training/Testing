@@ -1,0 +1,50 @@
+from keras.preprocessing.image import ImageDataGenerator
+import cv2
+import seaborn as sn
+import pandas as pd
+import matplotlib
+import numpy as np
+import matplotlib.pyplot as plt
+import tensorflow as tf
+import keras
+from keras.models import load_model,model_from_json
+from keras.regularizers import l1,l2
+from sklearn.metrics import plot_confusion_matrix,classification_report, confusion_matrix
+
+SIZE = 128
+BATCH_SIZE = 50
+IMAGE_SIZE = (SIZE,SIZE)
+
+
+data = ImageDataGenerator(rescale=1./255)
+data_val = ImageDataGenerator(rescale=1./255)
+data_test = ImageDataGenerator(rescale=1./255)
+train_data = data.flow_from_directory('../input/dataset3/Not augmented (80-20)/train',target_size=IMAGE_SIZE,batch_size=BATCH_SIZE,class_mode="categorical")
+val_data = data_val.flow_from_directory('../input/dataset3/Not augmented (80-20)/val',target_size=IMAGE_SIZE,batch_size=BATCH_SIZE,class_mode="categorical")
+images_test = data_test.flow_from_directory('../input/dataset3/Not augmented (80-20)/test',target_size=IMAGE_SIZE,batch_size=BATCH_SIZE,class_mode="categorical",shuffle=False)
+
+json_model = open("../input/c128adam/.json","r")
+loaded = json_model.read()
+json_model.close()
+model = model_from_json(loaded)
+
+model.load_weights("../input/c128adam/c128_weights.hdf5")
+
+predict = model.predict_generator(images_test)
+classes = images_test.classes[images_test.index_array]
+predicted = np.argmax(predict, axis=-1)
+
+confusionMatrix = plt.figure(figsize=(12,6))
+dataframe = pd.DataFrame(confusion_matrix(images_test.classes[images_test.index_array],predicted),images_test.class_indices.keys(),images_test.class_indices.keys())
+sn.set(font_scale=1)
+sn.heatmap(dataframe,annot=True,annot_kws={"size":10},fmt=".1f",cmap="coolwarm")
+plt.show()
+confusionMatrix.savefig(MODEL_NUM + "confusion_matrix.png")
+plt.close(confusionMatrix)
+
+print(classification_report(images_test.classes[images_test.index_array],predicted))
+
+with open(MODEL_NUM + 'modelsummary.txt','w+') as f:
+    model.summary(print_fn=lambda x: f.write(x + '\n'))
+    
+   
