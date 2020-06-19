@@ -1,0 +1,63 @@
+import numpy as np 
+import tensorflow as tf
+import numpy as np
+import cv2
+import os
+import matplotlib.pyplot as plt
+
+SIZE = 224
+
+json_model = open("unet_model.json","r")
+model = json_model.read()
+json_model.close()
+
+model = tf.keras.models.model_from_json(model)
+
+model.load_weights("unet_weights.h5")
+
+
+def predict(image_file):
+
+	image = cv2.imread(image_file)
+
+	image_for_mask = cv2.imread(image_file)
+
+	print(image.shape)
+
+
+	s = max(image.shape[0:2])  
+	f = np.zeros((s,s,3),np.uint8)
+	f.fill(255)
+	ax,ay = (s - image.shape[1])//2,(s - image.shape[0])//2
+	f[ay:image.shape[0]+ay,ax:ax+image.shape[1]] = image
+	image = f
+
+	s = max(image_for_mask.shape[0:2])  
+	f = np.zeros((s,s,3),np.uint8)
+	ax,ay = (s - image_for_mask.shape[1])//2,(s - image_for_mask.shape[0])//2
+	f[ay:image_for_mask.shape[0]+ay,ax:ax+image_for_mask.shape[1]] = image_for_mask	
+	image_for_mask = f
+
+	image_for_mask = cv2.resize(image_for_mask,(SIZE,SIZE))
+
+	image = cv2.resize(image,(SIZE,SIZE))
+	image = np.reshape(image,[1,SIZE,SIZE,3])
+	image = image.astype("float32")
+	image /= 255
+
+	print(image.shape)
+
+	output = model.predict(image)
+
+	image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+	for row in range(SIZE):
+		for col in range(SIZE):
+			if output[0][row,col] > 0.5:
+				image_for_mask[row,col][0] = 255
+
+	cv2.imshow("seg.jpg",image_for_mask)
+	cv2.waitKey()
+
+for i in os.listdir("test_images"):
+	predict("test_images/"+i)
