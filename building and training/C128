@@ -77,3 +77,26 @@ with open(MODEL_NUM + "json_model.json", "w") as file:
     file.write(json_model)
    
 print(model.evaluate(images_test))
+
+stats = plt.figure(figsize=(12,8))
+plt.plot(history.history['accuracy'])
+plt.plot(history.history['val_accuracy'])
+plt.title('Model accuracy')
+plt.ylabel('Accuracy')
+plt.xlabel('Epoch')
+plt.legend(['Train', 'Test'], loc='upper left')
+plt.show()
+stats.savefig(MODEL_NUM + "accuracy_history.png")
+plt.close(stats)
+
+stat = plt.figure(figsize=(12,8))
+plt.plot(history.history['loss'])
+plt.plot(history.history['val_loss'])
+plt.title('Model loss')
+plt.ylabel('Loss')
+plt.xlabel('Epoch')
+plt.legend(['Train', 'Test'], loc='upper left')
+plt.show()
+stat.savefig(MODEL_NUM + "loss_history.png")
+plt.close(stats)
+
